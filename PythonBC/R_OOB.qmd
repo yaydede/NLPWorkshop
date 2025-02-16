@@ -1,0 +1,85 @@
+---
+title: "OOB in R"
+format: html
+editor: visual
+---
+
+R supports Object-Oriented Programming (OOP) through several systems, such as S3, S4, and R6. Among these, R6 is the most similar to OOP in languages like Python, allowing for the creation of classes, methods, and objects with encapsulation and inheritance.
+
+Here is an example using the R6 system to demonstrate OOP concepts in R, including class creation, objects, methods, and inheritance.
+
+# Example: A Simple Banking System in R Using R6
+
+```{r}
+# Load the R6 package
+library(R6)
+
+# Base Class: Account
+Account <- R6Class(
+  "Account",
+  public = list(
+    owner = NULL,   # Attribute
+    balance = 0,    # Attribute
+
+    initialize = function(owner, balance = 0) {  # Constructor method
+      self$owner <- owner
+      self$balance <- balance
+    },
+
+    deposit = function(amount) {  # Method to deposit money
+      self$balance <- self$balance + amount
+      cat(amount, "deposited. New balance is:", self$balance, "\n")
+    },
+
+    withdraw = function(amount) {  # Method to withdraw money
+      if (amount > self$balance) {
+        cat("Insufficient funds!\n")
+      } else {
+        self$balance <- self$balance - amount
+        cat(amount, "withdrawn. Remaining balance is:", self$balance, "\n")
+      }
+    },
+
+    print = function() {  # Special method to print account details
+      cat("Account owner:", self$owner, ", Account balance: $", self$balance, "\n")
+    }
+  )
+)
+
+# Derived Class: SavingsAccount (Inheritance)
+SavingsAccount <- R6Class(
+  "SavingsAccount",
+  inherit = Account,  # Inherit from the Account class
+  public = list(
+    interest_rate = 0.02,  # Additional attribute specific to SavingsAccount
+
+    initialize = function(owner, balance = 0, interest_rate = 0.02) {
+      super$initialize(owner, balance)  # Call the constructor of the parent class
+      self$interest_rate <- interest_rate
+    },
+
+    add_interest = function() {  # Additional method specific to SavingsAccount
+      interest <- self$balance * self$interest_rate
+      self$balance <- self$balance + interest
+      cat("Interest added:", interest, ". New balance is:", self$balance, "\n")
+    }
+  )
+)
+
+# Creating objects
+john_account <- Account$new("John", 100)  # Create an object of the Account class
+emma_savings <- SavingsAccount$new("Emma", 500, 0.03)  # Create an object of the SavingsAccount class
+
+# Using methods
+john_account$print()  # Output: Account owner: John , Account balance: $ 100
+john_account$deposit(50)  # Depositing money
+john_account$withdraw(30)  # Withdrawing money
+john_account$print()  # Output: Account owner: John , Account balance: $ 120
+
+emma_savings$print()  # Output: Account owner: Emma , Account balance: $ 500
+emma_savings$add_interest()  # Adding interest
+emma_savings$withdraw(100)  # Withdrawing money
+emma_savings$print()  # Output: Account owner: Emma , Account balance: $ 515
+
+```
+

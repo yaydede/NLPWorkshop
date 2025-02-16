@@ -1,0 +1,394 @@
+---
+title: "<span style='color: red; font-size: 50px;'>Gradient Descent</span>"
+title-block-banner-color: "red"
+author: "Dr. Aydede"
+subtitle: "MBAN - Winter 2024"
+format:
+  html:
+    embed-resources: true
+    code-background: true
+toc: true
+toc-float: true
+number-sections: true
+theme: united
+highlight: tango
+---
+
+Gradient Descent (GD) is a foundational optimization algorithm in machine learning and artificial intelligence, playing a crucial role in the training of models. It's designed to minimize a function by iteratively moving towards the minimum value of that function. Here's a breakdown of its core aspects, uses, importance, and types:
+
+Gradient Descent is an optimization algorithm used for finding the minimum of a function. Specifically, in machine learning, it's used to minimize the cost function, which measures the difference between the model's prediction and the actual data. The "gradient" refers to the slope of the cost function, and "descent" indicates moving downward to the lowest point. 
+
+The algorithm
+  
+ - **starts with a random point** on the function, 
+ - and moves in the direction of the **steepest decrease** in value. 
+ - It does this by computing the **gradient (the derivative) of the cost function** at the current point, 
+ - then **updating the point by moving in the negative direction of the gradient**. 
+ - The size of the steps taken in this direction is determined by a parameter called the **learning rate**.  
+
+**In deep learning**, Gradient Descent is fundamental in training deep neural networks, where the algorithm navigates through high-dimensional spaces to find the parameter values that minimize the loss function.  
+  
+Almost every machine learning algorithm involves some form of optimization where Gradient Descent plays a vital role. It is key to enabling models to learn from data and make accurate predictions or decisions. 
+  
+Gradient Descent is favored for its simplicity and scalability, especially in dealing with large datasets and complex models in AI, like deep learning architectures.  
+
+Types of Gradient Descent:
+  
+- **Batch Gradient Descent:** Computes the gradient of the cost function with respect to the parameters for the entire training dataset. While precise, it can be slow and computationally expensive for large datasets. 
+- **Stochastic Gradient Descent (SGD):** Updates the parameters for each training example one by one. It's much faster and can be used for online learning, but it's more susceptible to noise in the updates.
+- **Mini-batch Gradient Descent:** Strikes a balance between batch and stochastic versions. It updates the parameters for a small subset of the training data at a time. This is the most common variant used in practice, especially in deep learning, due to its efficiency and convergence speed.
+
+Gradient Descent's flexibility and effectiveness make it a cornerstone in the field of machine learning and artificial intelligence, underlying the training process of virtually all models. Its understanding is crucial for designing, training, and deploying ML models effectively.
+
+# Batch Gradient Descent
+
+Batch Gradient Descent computes the gradient of the cost function with respect to the parameters for the entire training dataset. It's the most precise version of Gradient Descent, but it can be slow and computationally expensive for large datasets. Here's a simple example of Batch Gradient Descent in R:
+
+```{r}
+set.seed(1001)
+N <- 100
+int <- rep(1, N)
+x1 <- rnorm(N, mean = 10, sd = 2)
+Y <- rnorm(N, 2*x1 + int, 1)
+model <- lm(Y ~ x1)
+beta <- coef(model)
+beta
+
+plot(x1, Y, col = "blue", pch = 20)
+abline(beta)
+```
+
+```{r}
+#starting points
+set.seed(234)
+b <- runif(1, 0, 1)
+c <- runif(1, 0, 1)
+n <- length(x1)
+  
+#function
+yhat <- c + b * x1
+  
+#gradient
+MSE <- sum((Y - yhat) ^ 2) / n
+converged = FALSE
+iterations = 0
+  
+#while loop
+while (converged == FALSE) {
+    b_new <- b - ((0.01 * (1 / n)) * (sum((Y - yhat) * x1 * (-1))))
+    c_new <- c - ((0.01 * (1 / n)) * (sum(Y - yhat) * (-1)))
+    b <- b_new
+    c <- c_new
+    
+    yhat <- b * x1 + c
+    MSE_new <- sum((Y - yhat) ^ 2) / n
+    MSE <- c(MSE, MSE_new)
+    
+    d = tail(abs(diff(MSE)), 1)
+    if (round(d, 12) == 0) converged = TRUE
+    iterations = iterations + 1
+    if (iterations > 100000) converged = TRUE
+}
+
+c(iterations, c, b)
+```
+
+We can create a function for the above code as follows:
+
+```{r}
+set.seed(1001)
+N <- 1000
+int <- rep(1, N)
+x1 <- rnorm(N, mean = 10, sd = 2)
+Y <- rnorm(N, 2*x1 + int, 1)
+model <- lm(Y ~ x1)
+beta <- coef(model)
+
+grdescent <- function(x, y, lr,  maxiter) {
+  #starting points
+  set.seed(234)
+  b <- runif(1, 0, 1)
+  c <- runif(1, 0, 1)
+  n <- length(x)
+  
+  #function
+  yhat <- c + b * x
+  
+  #gradient
+  MSE <- sum((y - yhat) ^ 2) / n
+  converged = FALSE
+  iterations = 0
+  
+  #while loop
+  while (converged == F) {
+    b_new <- b - ((lr * (1 / n)) * (sum((y - yhat) * x * (-1))))
+    c_new <- c - ((lr * (1 / n)) * (sum(y - yhat) * (-1)))
+    b <- b_new
+    c <- c_new
+    
+    yhat <- b * x + c
+    MSE_new <- sum((y - yhat) ^ 2) / n
+    MSE <- c(MSE, MSE_new)
+    d = tail(abs(diff(MSE)), 1)
+    
+    if (round(d, 12) == 0) {
+      converged = TRUE
+      return(paste("Iterations: ", iterations, "Intercept: ", c, "Slope: ", b))
+    }
+    iterations = iterations + 1
+    if (iterations > maxiter) {
+      converged = TRUE
+      return(paste("Max. iter. reached, ", "Intercept:",
+                   c, "Slope:", b))
+    }
+  }
+}
+
+grdescent(x1, Y, 0.01, 100000)
+beta
+```
+
+
+Please check the book's Chapter 30 "Algorithmic Optimization" for gradient descent on a multivariate case with linear algebra.  
+
+# Stochastic Gradient Descent
+
+Stochastic Gradient Descent (SGD) updates the parameters for each training example one by one. It's much faster and can be used for online learning, but it's more susceptible to noise in the updates. Here's a simple example of Stochastic Gradient Descent in R (note that if we split the data and use $x_i$ and $y_i$ from the validation set, MSE becomes the validation error) :
+
+```{r}
+set.seed(1001)
+N <- 1000
+int <- rep(1, N)
+x1 <- rnorm(N, mean = 10, sd = 2)
+Y <- rnorm(N, 2*x1 + int, 1)
+model <- lm(Y ~ x1)
+beta <- coef(model)
+
+# Starting points
+set.seed(234)
+b <- runif(1, 0, 1)
+c <- runif(1, 0, 1)
+
+# Stochastic Gradient Descent
+learning_rate <- 0.01
+max_iterations <- 100000
+converged <- FALSE
+iterations <- 0
+
+while (!converged && iterations < max_iterations) {
+  i <- sample(1:N, 1) # Randomly select an index for stochastic update
+  x_i <- x1[i]
+  y_i <- Y[i]
+  
+  yhat_i <- c + b * x_i 
+  # If we split the data and use x_i from the validation set,
+  # MSE becomes the validation error 
+  
+  # Update rules for SGD: using just one data point
+  # Note that y_i could be from the validation set
+  b_new <- b - learning_rate * (yhat_i - y_i) * x_i
+  c_new <- c - learning_rate * (yhat_i - y_i)
+  
+  if (abs(b_new - b) < 1e-8) {
+    converged <- TRUE
+  }
+  
+  b <- b_new
+  c <- c_new
+  iterations <- iterations + 1
+  
+  # Note that we can calculate MSPE if use validation set 
+  yhat <- b * x1 + c
+  MSE_new <- sum((Y - yhat) ^ 2) / n
+  MSE <- c(MSE, MSE_new)
+  d = tail(abs(diff(MSE)), 1)
+  
+}
+
+c(iterations, c, b)
+beta
+tail(MSE, 1)
+d
+```
+
+The most reliable way to find an acceptable number of iterations is through experimentation and validation. This involves:
+  
+- Splitting your data into training, validation, and test sets. 
+- Training your model for a range of iteration values. 
+- Evaluating performance on the validation set to find the iteration value that offers the best trade-off between training time and model performance. 
+- Using early stopping to automatically halt training when the validation performance no longer improves, thereby finding an acceptable number of iterations dynamically. 
+
+# Mini-batch Gradient Descent
+
+Incorporating the concepts of batches and epochs into Stochastic Gradient Descent (SGD) actually transforms it into Mini-batch Gradient Descent. This approach strikes a balance between the computational efficiency of SGD and the stability of batch gradient descent. Here's a brief explanation of these concepts before we dive into how you can modify your code:
+    
+- **Epoch:** One epoch is completed when the algorithm has passed through the entire dataset once. In the context of Mini-batch Gradient Descent, this means going through all mini-batches once. 
+- **Batch Size:** The number of examples in a mini-batch. If the batch size is 1, it's essentially SGD. If the batch size is equal to the size of the training dataset, it's batch gradient descent. 
+
+Here's how you can add batch and epoch functionality to our code:
+
+```{r, cache=TRUE}
+set.seed(1001)
+N <- 10000000
+int <- rep(1, N)
+x1 <- rnorm(N, mean = 10, sd = 2)
+Y <- rnorm(N, 2*x1 + int, 1)
+model <- lm(Y ~ x1)
+beta <- coef(model)
+beta
+
+# Starting points
+set.seed(234)
+b <- runif(1, 0, 1)
+c <- runif(1, 0, 1)
+n <- length(x1)
+
+# Parameters
+learning_rate <- 0.01
+batch <- 10000
+epochs <- 10 # Reduced for practicality
+epsilon <- 1e-6 # Small threshold for convergence check
+
+# Gradient
+yhat <- c + b * x1
+MSE <- sum((Y - yhat) ^ 2) / n
+converged <- FALSE
+iterations <- 0
+MSE_change <- numeric(epochs) # Pre-allocate for efficiency
+
+# While loop
+while (!converged && iterations < epochs) {
+  # Shuffle data points
+  indices <- sample(n, n)
+  
+  for (i in seq(1, n, by = batch)) {
+    idx <- indices[i:min(i + batch - 1, n)]
+    x_batch <- x1[idx]
+    y_batch <- Y[idx]
+    
+    yhat_batch <- c + b * x_batch
+    
+    # Gradient calculation
+    b_gradient <- -(1 / length(idx)) * sum((y_batch - yhat_batch) * x_batch)
+    c_gradient <- -(1 / length(idx)) * sum(y_batch - yhat_batch)
+    
+    # Update parameters
+    b <- b - learning_rate * b_gradient
+    c <- c - learning_rate * c_gradient
+  }
+  
+  # Recalculate yhat and MSE
+  yhat <- c + b * x1
+  MSE_new <- sum((Y - yhat) ^ 2) / n
+  MSE_change[iterations + 1] <- abs(MSE_new - MSE)
+  MSE <- MSE_new
+  
+  # Check for convergence
+  if (MSE_change[iterations + 1] < epsilon) {
+    converged <- TRUE
+  }
+  
+  iterations <- iterations + 1
+}
+
+# Trim the unused portion of the pre-allocated vector
+MSE_change <- MSE_change[1:iterations]
+
+# Output
+list(iterations = iterations, c = c, b = b, MSE_change = tail(MSE_change, 1), beta)
+```
+
+In this code, the dataset is divided into mini-batches of a specified size, and the parameters (`b` and `c`) are updated for each mini-batch. This process is repeated for a number of epochs, allowing the model to see the entire dataset multiple times, which can help in achieving better convergence.
+
+Adjusting the `batch` size and number of `epochs` can significantly affect the convergence and performance of the model. 
+  
+A smaller batch size can lead to faster convergence but can also introduce more noise into the parameter updates, while a larger batch size provides more stable updates but at a higher computational cost. The number of epochs controls how many times the algorithm will work through the entire dataset, and choosing the right number is crucial to avoid both underfitting and overfitting in ML & NN.
+
+# Adjustable Learning Rate
+
+An adjustable learning rate has several advantages over a fixed learning rate in gradient-based optimization algorithms like stochastic gradient descent:
+
+Although an adjustable learning rate can lead to faster convergence, improved precision, and better overall performance in gradient-based optimization algorithms, it also introduces additional hyperparameters (e.g., **decay rate**, **annealing schedule**) that need to be tuned for optimal performance. 
+
+There are various learning rate scheduler strategies:
+  
+- **Exponential decay:** The learning rate is multiplied by a fixed decay rate at each iteration or epoch, as demonstrated in the previous example.
+Step decay: The learning rate is reduced by a fixed factor at specific intervals, such as every N epochs. For example, the learning rate could be reduced by a factor of 0.5 every 10 epochs. 
+- **Time-based decay:** The learning rate is reduced according to a function of the elapsed training time or the number of iterations. For example, the learning rate could be reduced by a factor proportional to the inverse of the square root of the number of iterations.
+- **Cosine annealing:** The learning rate is reduced following a cosine function, which allows for periodic “restarts” of the learning rate, helping the optimization process escape local minima or saddle points. 
+- **Cyclic learning rates:** The learning rate is varied cyclically within a predefined range, allowing the model to explore different areas of the loss surface more effectively. 
+- **Adaptive learning rates:** These learning rate schedulers adjust the learning rate based on the progress of the optimization process, such as the improvement in the loss function or the validation accuracy. Some well-known adaptive learning rate methods include **AdaGrad**, **RMSprop**, and **Adam**.
+  
+The choice of learning rate scheduler and its hyperparameters depends on the specific problem, the dataset, and the model architecture. It often requires experimentation and validation to find the optimal learning rate schedule for a given task.
+  
+Check the book's Chapter 30 "Algorithmic Optimization" for stochastic gradient descent with adaptive learning rates.  
+
+```{r, cache=TRUE}
+set.seed(1001)
+N <- 1000000
+int <- rep(1, N)
+x1 <- rnorm(N, mean = 10, sd = 2)
+Y <- rnorm(N, 2*x1 + int, 1)
+model <- lm(Y ~ x1)
+b <- coef(model)
+b
+
+# Starting points
+set.seed(234)
+b <- runif(1, 0, 1)
+c <- runif(1, 0, 1)
+n <- length(x1)
+
+# Parameters
+initial_learning_rate <- 0.01
+decay_rate <- 0.99999
+batch_size <- 50
+max_iterations <- 100
+tolerance <- 1e-8
+
+# Function
+yhat <- c + b * x1
+
+# Gradient
+MSE <- sum((Y - yhat) ^ 2) / n
+converged = F
+iterations = 0
+num_batches <- ceiling(n / batch_size)
+
+# While loop
+while (!converged && iterations < max_iterations) {
+  # Shuffle data points
+  indices <- sample(n, n)
+  
+  for (i in seq(1, n, by = batch_size)) {
+    idx <- indices[i:min(i + batch_size - 1, n)]
+    x_batch <- x1[idx]
+    y_batch <- Y[idx]
+    
+    yhat_batch <- c + b * x_batch
+    
+    learning_rate <- initial_learning_rate * decay_rate^iterations
+    
+    b_new <- b - learning_rate * ((1 / length(idx)) * 
+                                    sum((y_batch - yhat_batch) *
+                                          x_batch * (-1)))
+    c_new <- c - learning_rate * ((1 / length(idx)) *
+                                    sum(y_batch - yhat_batch) * (-1))
+    
+    b <- b_new
+    c <- c_new
+  }
+  
+  yhat <- b * x1 + c
+  MSE_new <- sum((Y - yhat) ^ 2) / n
+  d = abs(MSE_new - tail(MSE, 1))
+  
+  if (d < tolerance) converged = T
+  MSE <- c(MSE, MSE_new)
+  
+  iterations = iterations + 1
+}
+
+c(iterations, c, b)
+```
+

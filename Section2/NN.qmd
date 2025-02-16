@@ -1,0 +1,425 @@
+---
+title: "<span style='color: red; font-size: 50px;'>Neural Networks - The Idea</span>"
+title-block-banner-color: "red"
+author: "Dr. Aydede"
+subtitle: "MBAN - Winter 2024"
+format:
+  html:
+    embed-resources: true
+    code-background: true
+toc: true
+toc-float: true
+number-sections: true
+theme: united
+highlight: tango
+---
+
+Neural networks (NN) are a class of models that are inspired by the human brain. **They are however parametric models**, and they are used for supervised learning.
+
+# The Idea
+
+## Polynomial Regression
+
+Let's start with a predictive model with a single input (covariate). The simplest model could be a linear model:
+
+$$
+y \approx \alpha+\beta x
+$$
+
+Since this model could be a quite restrictive, we can have a more flexible one by a polynomial regression:
+
+$$
+y \approx \alpha+\beta_1 x+\beta_2 x^2+\beta_3 x^3+\ldots=\alpha+\sum_{m=1}^M \beta_m x^m
+$$
+
+The polynomial regression is based on fixed components, or bases: $x, x^2, x^3, \ldots, x^M$. 
+
+Let us consider a realistic (simulated) sample:
+  
+```{r}
+n <- 200
+set.seed(1)
+x <- sort(runif(n))
+y <- sin(12*(x + 0.2))/(x + 0.2) + rnorm(n)/2
+df <- data.frame(y, x)
+plot(x, y, main="Simulated data",  col= "grey")
+```
+
+We can fit a polynomial regression with M = 3
+
+```{r}
+ols <- lm(y ~ x + I(x^2) + I(x^3))
+plot(x, y, main="Polynomial: M = 3",  col= "grey")
+lines(x, predict(ols), col="blue", lwd = 3)
+```
+
+Now, we can think of the line as weighted sum of fixed components: $\alpha_1+\beta_1 x+\beta_2 x^2+\beta_3 x^3$.
+
+```{r}
+# Parts
+first <- ols$coefficients[2]*x
+second <- ols$coefficients[3]*x^2
+third <- ols$coefficients[4]*x^3
+yhat <- ols$coefficients[1] + first + second + third 
+
+# Plots
+par(mfrow=c(1,3), oma = c(0,0,2,0))
+plot(x, first, ylab = "y", col = "pink", main = "x")
+plot(x, second, ylab = "y", col = "orange", main = expression(x^2))
+plot(x, third, ylab = "y", col = "green", main = expression(x^3))
+```
+
+And their sum:
+
+```{r}
+plot(x, y, ylab="y", col = "grey",
+     main = expression(y == alpha + beta[1]*x + beta[2]*x^2 + beta[3]*x^3))
+lines(x, yhat, col = "red", lwd = 3)
+mtext("Fixed Components",
+      outer=TRUE, cex = 1.5, col="olivedrab")
+```
+
+## Polynomial to Neural Network
+
+The artificial neural net replaces these fixed components with **adjustable ones or bases**
+  
+$$
+f\left(\alpha_1+\delta_1 x\right), f\left(\alpha_2+\delta_2 x\right), \ldots, f\left(\alpha_M+\delta_M x\right)
+$$ 
+  
+where $f(.)$ is an activation function.  We can see the first simple ANN as nonlinear functions of linear combinations:
+
+$$
+\begin{gathered}
+y \approx \alpha+\beta_1 f\left(\alpha_1+\delta_1 x\right)+\beta_2 f\left(\alpha_2+\delta_2 x\right)+\beta_3 f\left(\alpha_3+\delta_3 x\right)+\ldots \\
+=\alpha+\sum_{m=1}^M \beta_m f\left(\alpha_m+\delta_m x\right)
+\end{gathered}
+$$
+where $f($.$) is an activation function$:  
+  
+- The logistic (or sigmoid) function: $f(x)=\frac{1}{1+e^{-x}}$; 
+- The hyperbolic tangent function: $f(x)=\tanh (x)=\frac{e^x-e^{-x}}{e^x+e^{-x}}$; 
+- The Rectified Linear Unit (ReLU): $f(x)=\max (0, x)$;  
+
+Hence, adjustable components enable to capture complex models with fewer components (smaller M).
+
+Let's replace those fixed components $x, x^2, x^3$ in our polynomial regression with $f\left(\alpha_1+\delta_1 x\right)$, $f\left(\alpha_2+\delta_2 x\right), f\left(\alpha_3+\delta_3 x\right)$.
+
+The following code demonstrates the ability of a simple artificial neural network (ANN) with arbitrary parameters to capture the underlying signal relative to a third-degree polynomial regression model. It defines an ANN function with sigmoid activation functions for three nodes $(M=3)$, arbitrary parameters `a` , `b` , `beta` , and an intercept ( `int` ). For each node, the code calculates the weighted input ( $z$ ) using `a` and `b` , and then applies the sigmoid activation function to obtain the output ( `sig` ). The output is then multiplied by the corresponding beta value. The final output ( `yhat` ) is calculated as the sum of the intercept and the weighted outputs from all three nodes.
+
+```{r}
+a = c(1.5, 9, 3)
+b = c(-20,-14,-8)
+beta = c(15, 25,-40)
+int = 3
+
+ann <- function(a, b, beta, int) {
+  #1st sigmoid
+  a1 = a[1]
+  b1 = b[1]
+  z1 = a1 + b1 * x
+  sig1 = 1 / (1 + exp(-z1))
+  
+  f1 <- sig1
+  
+  #2nd sigmoid
+  a2 = a[2]
+  b2 = b[2]
+  z2 = a2 + b2 * x
+  sig2 = 1 / (1 + exp(-z2))
+  
+  f2 <- sig2
+  
+  #3rd sigmoid
+  a3 = a[3]
+  b3 = b[3]
+  z3 = a3 + b3 * x
+  sig3 = 1 / (1 + exp(-z3))
+  
+  f3 <- sig3
+  
+  yhat = int + beta[1] * f1 + beta[2] * f2 + beta[3] * f3
+  return(yhat)
+}
+
+yhat <- ann(a, b, beta, int)
+
+plot(x, y, main = "ANN: M = 3", ylim = c(-5, 15))
+lines(x, yhat, col = "red", lwd = 3)
+```
+
+For now, let’s obtain them with `neuralnet`.
+
+```{r}
+library(neuralnet)
+set.seed(2)
+nn <- neuralnet(y ~ x, data = df, hidden = 3, threshold = 0.05) 
+yhat <- compute(nn, data.frame(x))$net.result
+plot(x, y, main = "Neural Networks: M = 3")
+lines(x, yhat, col = "red", lwd = 3)
+```
+
+Why did neural networks perform better than polynomial regression in the previous example? Again, adjustable components enable to capture complex models. Let’s delve little deeper. Here is the weight structure of
+
+$$
+\begin{gathered}
+y \approx \alpha+\sum_{m=1}^3 \beta_m f\left(\alpha_m+\delta_m x\right) \\
+=\alpha+\beta_1 f\left(\alpha_1+\delta_1 x\right)+\beta_2 f\left(\alpha_2+\delta_2 x\right)+\beta_3 f\left(\alpha_3+\delta_3 x\right)
+\end{gathered}
+$$
+
+```{r}
+nn$weights
+```
+```{r}
+plot(nn, rep = "best")
+```
+  
+- Error: It represents the final error of the best-performing neural network after the training process has concluded. It's a snapshot of how well (or not) your model has learned the underlying pattern in our data. 
+- Steps: The 48113' is the number of steps (iterations) the algorithm took to reach its current state, under the constraints we provided (like learning rate, threshold, etc.). It's a testament to how hard your network worked to get to its final form.  
+  
+We used sigmoid (logistic) activation functions
+  
+Node 1: $\quad f(x)=\frac{1}{1+e^{-x}}=\frac{1}{1+e^{-(1.26253-18.95937 x)}}$.  
+Node 2: $\quad f(x)=\frac{1}{1+e^{-x}}=\frac{1}{1+e^{-(6.599773-12.24665 x)}}$.  
+Node 3: $\quad f(x)=\frac{1}{1+e^{-x}}=\frac{1}{1+e^{-(2.504890-5.700564 x)}}$.  
+
+We can calculate the value of each activation function by using our data, $x$ :
+
+```{r}
+X <- cbind(1, x)
+
+# to 1st Node
+n1 <- nn$weights[[1]][[1]][,1]
+f1 <- nn$act.fct(X %*% n1)
+
+# to 2nd Node
+n2 <- nn$weights[[1]][[1]][,2]
+f2 <- nn$act.fct(X %*% n2)
+
+# to 3rd Node
+n3 <- nn$weights[[1]][[1]][,3]
+f3 <- nn$act.fct(X %*% n3)
+
+par(mfrow = c(1,3), oma = c(0,0,2,0))
+plot(x, f1, col = "pink", main = expression(f(alpha[1] + beta[1]*x)))
+plot(x, f2, col = "orange", main = expression(f(alpha[2] + beta[2]*x)))
+plot(x, f3, col = "green", main = expression(f(alpha[3] + beta[3]*x)))
+mtext("Flexible Components",
+      outer = TRUE, cex = 1.5, col = "olivedrab")
+```
+
+Now we will go from these nodes to the "sink":
+$$
+\begin{aligned}
+& \frac{1}{1+e^{-(1.26253-18.95937 x)}} \times 13.032092 \\
+& \frac{1}{1+e^{-(6.599773-12.24665 x)}} \times 19.923742 \\
+& \frac{1}{1+e^{-(2.504890-5.700564 x)}} \times-32.173264
+\end{aligned}
+$$
+
+Finally, we will add these with a "bias", the intercept:
+$$
+\begin{gathered}
+2.407654+ \\
+\frac{1}{1+e^{-(1.26253-18.95937 x)}} \times 13.032092+ \\
+\frac{1}{1+e^{-(6.599773-12.24665 x)}} \times 19.923742+ \\
+\frac{1}{1+e^{-(2.504890-5.700564 x)}} \times-32.173264
+\end{gathered}
+$$
+
+```{r}
+# From Nodes to sink (Y)
+f12 <- f1*nn$weights[[1]][[2]][2]
+f22 <- f2*nn$weights[[1]][[2]][3]
+f23 <- f3*nn$weights[[1]][[2]][4]
+
+# Results
+yhat <- nn$weights[[1]][[2]][1] + f12 + f22 + f23
+plot(x, y, main="ANN: M = 3")
+lines(x, yhat, col="red", lwd = 3)
+```
+
+# Neural Networks - More inputs
+
+With a set of covariates $X=\left(1, x_1, x_2, \ldots, x_k\right)$, we have:
+  
+$$
+\begin{gathered}
+y \approx \alpha+\sum_{m=1}^M \beta_m f\left(\alpha_m+\mathbf{X} \delta_m\right)= \\
+=\alpha+\beta_1 f\left(\alpha_1+\delta_{11} x_{1 i}+\delta_{12} x_{2 i} \cdots+\delta_{1 k} x_{k i}\right)+\ldots \\
++\beta_M f\left(\alpha_{M 1}+\delta_{M 1} x_{1 i}+\delta_{M 2} x_{2 i} \cdots+\delta_{M k} x_{k i}\right)
+\end{gathered}
+$$
+We will use the `neuralnet` package
+
+```{r}
+library(MASS)
+data("Boston")
+str(Boston)
+summary(Boston)
+```
+
+```{r}
+sum(is.na(Boston))
+normalizedBoston <- as.data.frame(scale(Boston))
+```
+
+```{r}
+set.seed(123) # For reproducibility
+ind <- sample(1:nrow(normalizedBoston), size = 0.8 * nrow(normalizedBoston))
+train_data <- normalizedBoston[ind, ]
+test_data <- normalizedBoston[-ind, ]
+```
+
+The `neuralnet` package requires the inputs as a dataframe and the targets (in this case, the `medv` variable for median house value) either as a separate vector or as part of the dataframe. Here's how to prepare both:
+
+```{r}
+train_targets <- train_data$medv
+test_targets <- test_data$medv
+
+train_data$medv <- NULL
+test_data$medv <- NULL
+```
+
+We are ready
+
+```{r}
+library(neuralnet)
+
+# Define the formula
+formula <- paste("train_targets ~", paste(names(train_data), collapse = " + "))
+
+# Train the neural network
+set.seed(123) # For reproducibility
+nn1 <- neuralnet(formula, data = cbind(train_targets, train_data), hidden = c(5), linear.output = TRUE)
+```
+
+In this example, `hidden=c(5)` defines a neural network with one hidden layer containing 5 (3) neurons. `linear.output=TRUE` is used because this is a regression problem.
+
+```{r}
+plot(nn1, rep = "best")
+```
+
+Prediction error
+
+```{r}
+mse.test1 <- mean((test_targets - predict(nn1, test_data))^2)
+mse.test1
+```
+
+Is it good?  Let's try more/less neurons. 
+
+```{r}
+nn2 <- neuralnet(formula, data = cbind(train_targets, train_data), hidden = c(4), linear.output = TRUE)
+```
+
+What's happening?  The warning message you received, `Warning: Algorithm did not converge in 1 of 1 repetition(s) within the stepmax`, indicates that the optimization algorithm used by `neuralnet` to train the neural network did not successfully converge to a solution within the maximum number of steps allowed (`stepmax`). Convergence means that the algorithm has found a stable set of weights and biases for the neural network that are unlikely to change with additional training under the current settings.
+
+This lack of convergence can occur for several reasons:  
+  
+- Insufficient Training: The `stepmax` parameter (the maximum number of steps/iterations the training algorithm should run) might be too low, not giving the algorithm enough time to converge. 
+- Learning Rate Issues: The learning rate might be too high or too low, causing the algorithm to overshoot the minimum or progress too slowly, respectively. 
+- Complex Model Structure: The model's complexity (e.g., too many neurons or layers) relative to the data could make training difficult. 
+- Data Issues: Problems with the data, such as scaling issues (even though we've scaled your data, it's still something to consider), or the dataset not being representative or informative enough for the task.  
+  
+How to Address Convergence Warning
+  
+- Increase `stepmax`: Providing the algorithm with more iterations may help. You can increase `stepmax` in the `neuralnet` function call. 
+- Adjust the Learning Rate: If the learning rate is adjustable in your setup (through parameters like `learningrate_limit`, `learningrate_factor`, etc., depending on the algorithm used), try fine-tuning it.
+- Simplify the Model: Reduce the complexity of the neural network by using fewer hidden layers or neurons. 
+- Reevaluate the Data: Ensure the data is appropriately preprocessed, including checking for outliers or errors in the data that might affect training?  
+
+```{r}
+# Train the neural network with stepmax and learningrate parameters
+set.seed(123) # Ensure reproducibility
+nn2 <- neuralnet(formula, data = cbind(train_targets, train_data), hidden = c(4), 
+                linear.output = TRUE, stepmax = 1e5, learningrate = 0.01)
+```
+
+```{r}
+plot(nn2, rep = "best")
+```
+```{r}
+mse.test2 <- mean((test_targets - predict(nn2, test_data))^2)
+mse.test2
+```
+
+The `neuralnet` function in R is highly configurable, offering a wide array of arguments to tailor the neural network training process to specific needs. Here's a breakdown of each argument in the function call you've provided:
+
+## Arguments
+
+**Core Arguments**
+  
+- `formula`: A symbolic description of the model to be fitted. The format is response ~ terms where response is the (numeric) dependent variable, and terms are the independent variables or predictors. 
+- `data`: The data frame containing the variables specified in the formula. 
+  
+**Architecture and Training Configuration**
+  
+- `hidden`: A vector indicating the number and size of hidden layers and neurons. For example, c(5, 3) means two hidden layers with 5 neurons in the first layer and 3 in the second. 
+- `threshold`: The threshold for the partial derivatives of the error function as a stopping criterion. Training stops when all partial derivatives are below this threshold. 
+- `stepmax`: Maximum number of training steps. The algorithm stops if this number is reached. 
+- `rep`: Number of times the neural network is trained. Multiple repetitions can help in finding a better local minimum since the training starts with different random weights each time.  
+
+**Learning Rate Parameters**
+  
+- `startweights`: Initial weights for the training process. NULL means that initial weights are chosen randomly.
+- `learningrate.limit`: Numeric vector of length 2 providing the minimum and maximum limit for the learning rate. It’s only relevant for the traditional backpropagation (algorithm = "backprop").
+- `learningrate.factor`: A list with components minus and plus defining the factors by which the learning rate is decreased or increased. Relevant for resilient backpropagation (rprop+ or rprop-).
+- `learningrate`: The learning rate for the weights' update. Relevant for backprop.
+
+**Output and Algorithm Control**
+  
+- `lifesign`: Output type during training, can be "none", "minimal", or "full".
+- `lifesign.step`: The frequency of the output defined by lifesign.
+- `algorithm`: The algorithm used for training. Can be "rprop+", "rprop-", "backprop", or "slr".
+- `err.fct`: The error function. Can be "sse" for sum of squared errors or "ce" for cross-entropy.
+- `act.fct`: The activation function, typically "logistic" or "tanh".
+- `linear.output`: Logical. If TRUE, the output neuron uses a linear activation function. Relevant for regression tasks.
+- `exclude`: Variables to be excluded from the model.
+- `constant.weights`: Allows setting some weights to a constant value that won't be changed during training.
+- `likelihood`: If TRUE, the likelihood is returned additionally to the neural network's results.
+
+**How to Use These Arguments**
+The choice of these parameters can significantly affect the training process and the model's performance. Here's how to use them effectively:
+  
+- Adjust the architecture (`hidden`) based on the complexity of the problem. 
+- Set a reasonable `stepmax` to ensure the training process has enough iterations to converge but stops to prevent excessive computation. 
+- Use multiple rep to mitigate the risk of getting stuck in a poor local minimum. 
+- Fine-tune the learning rate (`learningrate`, `learningrate.limit`, `learningrate.factor`) to balance the speed and stability of convergence. 
+- Choose an appropriate algorithm based on your problem and preference for speed vs. accuracy. 
+- Experiment with different `act.fct` and `err.fct` to find the best combination for your specific task. 
+   
+Selecting and tuning these parameters usually require some experimentation and are guided by the specific characteristics of your dataset and the problem you're solving.
+
+## More on Arguments
+
+**Epochs Explained**   
+An epoch refers to one complete pass through the entire training dataset. If you have a dataset of 1,000 examples and you use all of them once for updating the weights, that counts as one epoch. Training neural networks often requires many epochs, meaning the entire dataset is used multiple times iteratively to update the network's weights with the goal of minimizing the loss function.
+
+**Stepmax Explained**  
+`stepmax`, on the other hand, refers to the maximum number of steps (iterations) the training process will perform. A step is a single update of the model's weights. In gradient descent (and its variants), a step usually involves calculating the gradient of the loss function with respect to each weight, then adjusting the weights in the direction that minimizes the loss.
+
+**What's `rep`?**    
+In the context of the `neuralnet` package in R, the `rep` parameter specifies the number of times the neural network will be trained from the beginning with different initial weights. Each training run (or repetition) starts with a new set of random weights and goes through the training process independently of the others.
+  
+## Type of Backpropagation
+
+Resilient Backpropagation (Rprop) is an optimization algorithm used for training neural networks. It's designed to overcome some of the difficulties associated with the traditional gradient descent method, especially the problem of its learning rate parameter. Gradient descent updates the weights of the network by moving them in the direction opposite to the gradient of the error function with respect to those weights, scaled by a factor known as the learning rate. However, finding a suitable learning rate that works well for the entire training process can be challenging.
+
+**Key Features of Rprop**
+- Adapts the Learning Rate Individally for Each Weight: Unlike traditional gradient descent, which uses a single learning rate for all weight updates, Rprop uses a separate update value (similar to a learning rate) for each weight in the network, allowing it to adaptively adjust how much each weight is updated during training.
+- Only the Sign of the Gradient is Used: Rprop considers only the sign of the gradient (whether it's positive or negative) to determine the direction in which to update the weights, ignoring the magnitude of the gradient. This approach helps in making the training less sensitive to the steepness of the gradient, which can vary significantly across different weights.
+- Update Values Adjust Based on Gradient Change: The algorithm increases the update value for a weight if the gradient of the error function with respect to that weight keeps the same sign (indicating consistent direction in the error landscape), which speeds up convergence. Conversely, if the gradient sign changes (indicating an overshoot past the minimum), the update value is decreased to allow for finer adjustments.
+
+**Variants of Rprop**
+There are several variants of the resilient backpropagation algorithm, including:
+  
+- Rprop+ (Rprop Plus): Increases or decreases the update value based only on the change of sign in the gradient. If the gradient changes direction, indicating an overshoot, the previous update is undone.
+Rprop- (Rprop Minus): Similar to Rprop+, but without the weight backtracking step. It only adjusts the update values without reverting the last update.
+- iRprop+ (Improved Rprop Plus): Addresses some issues in Rprop+ related to weight updates in the flat regions of the error function.
+
+By adjusting the update values adaptively for each weight, Rprop can often converge faster than standard gradient descent, especially on problems where the gradient can vary significantly in different parts of the weight space.
+The algorithm is relatively simple to implement and does not require the fine-tuning of a global learning rate, making it appealing for many applications. In the `neuralnet` package in R, you can specify the use of the resilient backpropagation algorithm for training a neural network with the algorithm parameter:
+
+

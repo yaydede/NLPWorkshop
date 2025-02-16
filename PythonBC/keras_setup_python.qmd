@@ -1,0 +1,151 @@
+---
+title: "<span style='color: red; font-size: 50px;'>Python Setup for Keras with `venv` and `conda`</span>"
+title-block-banner-color: "red"
+author: "Dr. Aydede"
+subtitle: "MBAN - Winter 2024"
+format:
+  html:
+    embed-resources: true
+    code-background: true
+toc: true
+toc-float: true
+number-sections: true
+theme: united
+highlight: tango
+---
+
+Setting up Keras for efficient performance, especially for deep learning tasks, can vary significantly depending on whether you're using CPU or GPU resources, and what kind of GPU you're using. Here's a breakdown of the considerations and how to set up an efficient Keras environment in Python:
+
+**Keras and TensorFlow**  
+Firstly, Keras is a high-level neural networks API, capable of running on top of TensorFlow, CNTK, or Theano. However, since TensorFlow 2.0, Keras has been included as `tensorflow.keras`, making it the default API for building models in TensorFlow. This integrated version of Keras is optimized for TensorFlow's backend and is the recommended way to use Keras.
+
+**CPU vs. GPU**
+  
+- CPU Setup: Running Keras/TensorFlow on a CPU is straightforward and doesn't require additional setup beyond installing TensorFlow itself. This is perfectly fine for small models and datasets, but deep learning models often require extensive computational resources that CPUs cannot efficiently provide.
+- GPU Setup: Using a GPU can significantly accelerate the training of deep learning models due to GPUs' parallel processing capabilities. **TensorFlow supports NVIDIA GPUs because of CUDA, NVIDIA's parallel computing platform and programming model**. If you have an NVIDIA GPU, setting up TensorFlow to run on the GPU can vastly improve training times.
+
+**Requirements for GPU Acceleration**
+  
+- NVIDIA GPU: You need an NVIDIA GPU with CUDA Compute Capability 3.5 or higher to use TensorFlow with GPU acceleration. 
+- CUDA Toolkit: TensorFlow requires the CUDA Toolkit for GPU support. The version of CUDA required depends on the TensorFlow version you're using. 
+- cuDNN: The NVIDIA CUDA Deep Neural Network library (cuDNN) is a GPU-accelerated library for deep neural nets. TensorFlow relies on cuDNN for high-performance GPU acceleration. 
+- Operating System: While it's true that Linux has broad support and is often preferred for deep learning tasks, TensorFlow and Keras can run on Windows and macOS as well. The setup process on Linux is generally more straightforward, especially for GPU support, but it is not an absolute requirement.
+
+In this notebook, we will look at two issues: Python Environment Activation and Initializing TensorFlow Environment on M3, M3 Pro and M3 Max Macbook Pros.
+
+# Python Environment
+
+Below, I'll outline step-by-step instructions for initiating a Python environment both with Conda and without (using venv), which are two common methods for Python environment management.
+
+## Without Conda: Using `venv`
+
+This is also called 'Virtual Python Environment`. 
+
+The `venv` module is included in the Python Standard Library and is used to create isolated Python environments. Here's how to use it:
+  
+- Ensure Python 3 is Installed: First, make sure Python 3.3 or later is installed on the system. You can check this by running `python3 --version` in the terminal. 
+- Open a terminal or command prompt. Navigate to your project directory: `cd path/to/your/project`. 
+- Run the following command to create a virtual environment named env within your project directory: `python3 -m venv env`. This command creates a directory named env in your project folder, containing the Python executable, the Pip package manager, and other files. 
+- Active the Virtual Environment: On Windows, `.\env\Scripts\activate`; one Mac and Linux, `source env/bin/activate`. After activation, your terminal prompt will change to indicate that the virtual environment is active.  
+
+With the environment activated, use `pip` to install any packages needed for your project. For example: `pip install numpy`.  Once you're done working, you can deactivate the virtual environment by running: `deactivate` in bash.  
+
+**Example**
+  
+Here's an example of setting up a virtual environment and installing TensorFlow within it:
+
+`mkdir keras_noconda`  
+`cd keras_noconda`  
+`python3 -m venv noconda_env`  
+  
+Activate the virtual environment
+  
+`source noconda_env/bin/activate`   
+  
+Install several packages in the virtual environment 
+  
+`pip install tensorflow`  
+`pip install jupyter pandas numpy matplotlib scikit-learn`  
+  
+To deactivate the virtual environment, run: `deactivate`
+  
+To see the all available Virtual Environments ("non-Conda"), run the following command: `ls -a`
+  
+To see the list of installed packages in the virtual environment, run: `pip list`  
+
+`pip freeze` is a command used in the Python ecosystem. It generates a list of all the Python packages installed in your current environment, along with their exact versions. This command is crucial for creating a snapshot of your environment that can be replicated elsewhere.
+
+![](https://cdn.mathpix.com/snip/images/6_VOnKFrdfSSC1SvumkRFFoojXkTYCIl6OT70EE-zuY.original.fullsize.png)
+
+You can redirect the output of `pip freeze` to a requirements file, commonly named `requirements.txt`, using the following command:
+`pip freeze > requirements.txt`
+
+## With Conda
+Conda is a powerful package manager and environment management system. It's part of the Anaconda and Miniconda distributions.
+
+Install Miniconda or Anaconda: First, make sure you have either Anaconda or Miniconda installed. Anaconda includes Conda and a large number of scientific computing packages by default, while Miniconda includes only Conda and Python.
+
+- Open a terminal or Anaconda Prompt. Create a new Conda environment by running: `conda create --name myenv python=3.8`. Replace myenv with the name you wish to give your environment, and 3.8 with your preferred Python version. 
+- Activate your new environment by running: `conda activate myenv`. Your terminal prompt will change to indicate that the Conda environment is active.
+
+Install packages using Conda. For example, to install NumPy: `conda install numpy`. Conda can install packages from the Anaconda repository or PyPI.
+  
+Exit the environment when you're finished by running: `conda deactivate`
+
+**Example**
+  
+`mkdir keras_conda`  
+`cd keras_conda`    
+
+Create a new Conda environment 
+
+`conda create --name conda_env python=3.8`  
+  
+Activate the Conda environment
+  
+`conda activate conda_env`  
+  
+Install several packages in the Conda environment
+  
+`conda install tensorflow jupyter pandas numpy matplotlib scikit-learn`  
+  
+To see the list of installed packages in the Conda environment, run: `conda list`
+  
+Too see the all available Conda Environments, run the following command: `conda env list`
+  
+To deactivate the Conda environment, run: `conda deactivate`  
+  
+For each project and document their environment's dependencies, `conda list --export > environment.yml` for Conda environments.
+  
+Including virtual environment in the project directory makes the project more self-contained, but each project will have its own copy of Python and the installed packages, which takes more disk space. Centralized environments reduce space usage but can lead to confusion if many projects share the same environment.
+  
+Remove unused environments and packages. This helps in managing disk space and keeping the development environment tidy. For `venv`, this might be as simple as deleting the environment directory. For Conda, use `conda env remove --name myenv`.
+
+# MAC M1, M2, M3 Machines
+
+Unlock the full potential of your Apple Silicon-powered M3, M3 Pro, and M3 Max MacBook Pros by leveraging TensorFlow, the open-source machine learning framework. This repository is tailored to provide an optimized environment for setting up and running TensorFlow on Apple's cutting-edge M3 chips.
+
+See the step here: <https://github.com/ChaitanyaK77/Initializing-TensorFlow-Environment-on-M3-M3-Pro-and-M3-Max-Macbook-Pros.?tab=readme-ov-file>
+
+And here: <https://chat.openai.com/g/g-4fJEpO4Zg-python-keras/c/9957b2dc-796b-4ecd-8d86-fd8c8f9f56d0>
+
+Note that, for Conda environments that were created in the standard manner and are managed directly by Conda without specifying a custom location, you typically activate them by name (like, `conda activate env_name`) rather than by providing the full path. This is because Conda automatically recognizes these environments by their names and knows where to find them based on its configuration.
+
+However, when you create a Conda environment in a custom location outside of the default directories that Conda automatically searches, you must specify the full path to activate it, as Conda doesn't automatically track these environments by name.  For custom locations (like my `tensorflow-test` environment), which might not be immediately recognizable by Conda by name alone, you use the full path: `conda activate /full/path/to/env`
+  
+This distinction allows for flexibility in managing environments, especially when dealing with multiple projects or when needing to store environments in specific locations for access control, storage considerations, or other reasons.  
+
+Note: CPU performance is faster than GPU on your network. Find out if your workload is sufficient to take advantage of the GPU. On small networks running with small batch sizes, the CPU may perform faster overall due to the overhead related to dispatching computations to the GPU. This will get amortized when the batch or model sizes grow, since the GPU can then take better advantage of the parallelism in performing the computations.  
+
+**More on NLP Installations**
+
+Please check <https://github.com/sun1638650145/Libraries-and-Extensions-for-TensorFlow-for-Apple-Silicon/releases> and <https://solomonmg.medium.com/so-you-want-to-install-tensorflow-text-in-python-on-that-new-m1-m2-laptop-5e7d37be591e> for more information on how to install TensorFlow Text on Apple Silicon M1, M2, and M3 machines.
+
+
+# Final Thoughts
+
+Setting up a Python environment for Keras and TensorFlow can be done using `venv` or Conda, depending on your preference and requirements. Both methods allow you to create isolated environments with specific package dependencies, making it easier to manage multiple projects and ensure reproducibility. Additionally, for M3, M3 Pro, and M3 Max MacBook Pros, you can leverage TensorFlow to unlock the full potential of your Apple Silicon-powered machine. By following these steps, you can create an efficient and optimized environment for deep learning tasks using Keras and TensorFlow.
+  
+Can we use Dropbox? No, you should not use Dropbox to store your virtual environment. Dropbox is not designed to handle the complexities of virtual environments, and syncing the environment across multiple machines can lead to conflicts and errors. Instead, use a version control system like Git to manage your code and dependencies, and create a new environment on each machine as needed. Virtual environments are simply not transportable from system to system and should not be shared. The common thing to do is to have all packages that are installed in a `requirements.txt` file and have that in source control. All users can `pip install -r requirements.txt` and stay upto date. You can't even decide to change your directory structure of the venv without running some commands and its easier to delete the folder and start again.
+  
+Happy coding!  
