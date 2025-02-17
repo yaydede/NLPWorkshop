@@ -1,6 +1,9 @@
 # Ignore large CSV files
 PythonBC/notebook1/*.csv
 
+# env
+.env
+
 # Ignore cached files
 Section2/GradientD_cache/html/*.rdb
 
