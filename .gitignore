@@ -16,3 +16,7 @@ RAG/ragenv/
 *.csv
 *.tar.gz
 *.dylib
+
+# env file
+.env
+
