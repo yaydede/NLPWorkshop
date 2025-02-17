@@ -1,0 +1,18 @@
+# Ignore large CSV files
+PythonBC/notebook1/*.csv
+
+# Ignore cached files
+Section2/GradientD_cache/html/*.rdb
+
+# Ignore compressed files
+Section5/*.tar.gz
+
+# Ignore virtual environment and dependencies
+RAG/ragenv/
+*.dylib
+
+# Ignore all large files (over 50MB)
+*.rdb
+*.csv
+*.tar.gz
+*.dylib
